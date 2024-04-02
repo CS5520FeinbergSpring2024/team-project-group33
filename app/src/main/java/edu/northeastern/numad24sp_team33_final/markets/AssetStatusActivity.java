@@ -51,9 +51,9 @@ public class AssetStatusActivity extends AppCompatActivity {
 
         // Load ticket symbol from state
         tickerSymbol = savedInstanceState.getString(TICKER_SYMBOL_KEY, "AAPL");
+        assetTitleTextView.setText(tickerSymbol);
 
         // Default to Day View time range
-        currentTimeRange = TimeRange.DAY;
         setupGraphForTimeRange(TimeRange.DAY);
     }
 
@@ -64,8 +64,6 @@ public class AssetStatusActivity extends AppCompatActivity {
     }
 
     private void loadAssetDataFromTimeRange(TimeRange timeRange) {
-
-
         List<HistoricalQuote> historicalQuotes = fetchHistoricalData(timeRange);
 
         if (historicalQuotes != null && !historicalQuotes.isEmpty()) {
