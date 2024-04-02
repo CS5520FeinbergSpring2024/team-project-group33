@@ -99,25 +99,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/userPointsTextView" />
 
-    <Button
-        android:id="@+id/addOneBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="test +1pt"
-        app:layout_constraintBottom_toTopOf="@+id/minusOneBtn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toLoginBtn" />
+<!--    <Button-->
+<!--        android:id="@+id/addOneBtn"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="test +1pt"-->
+<!--        app:layout_constraintBottom_toTopOf="@+id/minusOneBtn"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.5"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/toLoginBtn" />-->
 
-    <Button
-        android:id="@+id/minusOneBtn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="test -1pt"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/addOneBtn" />
+<!--    <Button-->
+<!--        android:id="@+id/minusOneBtn"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="test -1pt"-->
+<!--        app:layout_constraintBottom_toBottomOf="parent"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="0.5"-->
+<!--        app:layout_constraintStart_toStartOf="parent"-->
+<!--        app:layout_constraintTop_toBottomOf="@+id/addOneBtn" />-->
 </androidx.constraintlayout.widget.ConstraintLayout>

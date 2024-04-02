@@ -53,15 +53,15 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);
         });
-        testPlusOneBtn = findViewById(R.id.addOneBtn);
-        testPlusOneBtn.setOnClickListener(v -> {
-            addOne(mAuth.getCurrentUser());
-        });
-
-        testMinusOneBtn = findViewById(R.id.minusOneBtn);
-        testMinusOneBtn.setOnClickListener(v -> {
-            minusOne(mAuth.getCurrentUser());
-        });
+//        testPlusOneBtn = findViewById(R.id.addOneBtn);
+//        testPlusOneBtn.setOnClickListener(v -> {
+//            addOne(mAuth.getCurrentUser());
+//        });
+//
+//        testMinusOneBtn = findViewById(R.id.minusOneBtn);
+//        testMinusOneBtn.setOnClickListener(v -> {
+//            minusOne(mAuth.getCurrentUser());
+//        });
         bonusMessageTextView = findViewById(R.id.bonusMessageTextView);
         claimBonusButton = findViewById(R.id.claimBonusButton);
 
