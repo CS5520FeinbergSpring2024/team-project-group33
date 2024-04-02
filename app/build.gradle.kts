@@ -45,4 +45,9 @@ dependencies {
     // Add the dependency for the Realtime Database library
     // When using the BoM, you don't specify versions in Firebase library dependencies
     implementation("com.google.firebase:firebase-database")
+
+    // Add dependency for Line Chart and charting data for assets/coins
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation("com.yahoofinance-api:YahooFinanceAPI:3.17.0")
+
 }
