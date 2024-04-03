@@ -5,4 +5,8 @@
     <string name="buttonWeekView">Week</string>
     <string name="buttonMonthView">Month</string>
     <string name="buttonYearView">Year</string>
+    <string name="refreshButton">Refresh</string>
+    <string name="teslaButton">Tesla</string>
+    <string name="appleButton">Apple</string>
+    <string name="amazonButton">Amazon</string>
 </resources>

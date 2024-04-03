@@ -70,4 +70,12 @@
         app:layout_constraintStart_toEndOf="@+id/buttonMonthView"
         app:layout_constraintTop_toBottomOf="@+id/lineChart" />
 
+    <Button
+        android:id="@+id/refreshButton"
+        android:layout_width="101dp"
+        android:layout_height="46dp"
+        android:text="@string/refreshButton"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,76 +1,98 @@
 package edu.northeastern.numad24sp_team33_final.markets;
 
+import static edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity.TimeRange.DAY;
+import static edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity.TimeRange.MONTH;
+import static edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity.TimeRange.WEEK;
+import static edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity.TimeRange.YEAR;
+
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.crazzyghost.alphavantage.AlphaVantage;
+import com.crazzyghost.alphavantage.Config;
+import com.crazzyghost.alphavantage.parameters.Interval;
+import com.crazzyghost.alphavantage.parameters.OutputSize;
+import com.crazzyghost.alphavantage.timeseries.response.StockUnit;
+import com.crazzyghost.alphavantage.timeseries.response.TimeSeriesResponse;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 
 import edu.northeastern.numad24sp_team33_final.R;
-import yahoofinance.Stock;
-import yahoofinance.YahooFinance;
-import yahoofinance.histquotes.HistoricalQuote;
-import yahoofinance.histquotes.Interval;
 
 public class AssetStatusActivity extends AppCompatActivity {
-    public static final String TICKER_SYMBOL_KEY = "ticketSymbolKey";
+    public static final String TICKER_SYMBOL_KEY = "tickerSymbolKey";
     private String tickerSymbol;
-    private TextView assetTitleTextView;
     private TimeRange currentTimeRange;
     private LineChart lineChart;
-    private Button buttonDayView, buttonWeekView, buttonMonthView, buttonYearView;
+    private Config apiConfig = Config.builder()
+            .key("VHPNXPBURA235OV5")
+            .timeOut(10)
+            .build();
+    private AlphaVantage alphaVantageApi = AlphaVantage.api();
+    private Thread assetDataFetcherThread;
+    private Handler assetDataHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_asset_status);
-
-        assetTitleTextView = findViewById(R.id.assetTitle);
+        alphaVantageApi.init(apiConfig);
         lineChart = findViewById(R.id.lineChart);
-        buttonDayView = findViewById(R.id.buttonDayView);
-        buttonDayView.setOnClickListener(view -> setupGraphForTimeRange(TimeRange.DAY));
+        TextView assetTitleTextView = findViewById(R.id.assetTitle);
 
-        buttonWeekView = findViewById(R.id.buttonWeekView);
-        buttonWeekView.setOnClickListener(view -> setupGraphForTimeRange(TimeRange.WEEK));
+        Button buttonDayView = findViewById(R.id.buttonDayView);
+        buttonDayView.setOnClickListener(view -> setupGraphForTimeRange(DAY));
 
-        buttonMonthView = findViewById(R.id.buttonMonthView);
-        buttonMonthView.setOnClickListener(view -> setupGraphForTimeRange(TimeRange.MONTH));
+        Button buttonWeekView = findViewById(R.id.buttonWeekView);
+        buttonWeekView.setOnClickListener(view -> setupGraphForTimeRange(WEEK));
 
-        buttonYearView = findViewById(R.id.buttonYearView);
-        buttonYearView.setOnClickListener(view -> setupGraphForTimeRange(TimeRange.YEAR));
+        Button buttonMonthView = findViewById(R.id.buttonMonthView);
+        buttonMonthView.setOnClickListener(view -> setupGraphForTimeRange(MONTH));
+
+        Button buttonYearView = findViewById(R.id.buttonYearView);
+        buttonYearView.setOnClickListener(view -> setupGraphForTimeRange(YEAR));
+
+        Button refreshButton = findViewById(R.id.refreshButton);
+        refreshButton.setOnClickListener(view -> setupGraph());
 
         // Load ticket symbol from state
-        tickerSymbol = savedInstanceState.getString(TICKER_SYMBOL_KEY, "AAPL");
+        tickerSymbol = getIntent().getExtras().getString(TICKER_SYMBOL_KEY, "AAPL");
         assetTitleTextView.setText(tickerSymbol);
 
         // Default to Day View time range
-        setupGraphForTimeRange(TimeRange.DAY);
+        setupGraphForTimeRange(DAY);
     }
 
     private void setupGraphForTimeRange(TimeRange timeRange) {
         // Update Graph with time range
-        loadAssetDataFromTimeRange(timeRange);
         currentTimeRange = timeRange;
+        setupGraph();
     }
 
-    private void loadAssetDataFromTimeRange(TimeRange timeRange) {
-        List<HistoricalQuote> historicalQuotes = fetchHistoricalData(timeRange);
+    private void setupGraph() {
+        assetDataFetcherThread = new Thread(new AssetDataFetcherRunnable());
+        assetDataFetcherThread.start();
+    }
 
-        if (historicalQuotes != null && !historicalQuotes.isEmpty()) {
+    private void loadAssetDataFromTimeRange(TimeSeriesResponse response) {
+        List<StockUnit> stockUnits = response.getStockUnits();
+
+        if (stockUnits != null && !stockUnits.isEmpty()) {
             List<Entry> entries = new ArrayList<>();
-            for (int i = 0; i < historicalQuotes.size(); i++) {
-                HistoricalQuote quote = historicalQuotes.get(i);
-                float value = (float) quote.getClose().doubleValue();
+            for (int i = 0; i < stockUnits.size(); i++) {
+                StockUnit unit = stockUnits.get(i);
+                float value = (float) unit.getClose();
                 entries.add(new Entry(i, value));
             }
 
@@ -79,36 +101,56 @@ public class AssetStatusActivity extends AppCompatActivity {
             lineChart.setData(lineData);
             lineChart.invalidate(); // refresh chart
         } else {
-            Toast.makeText(this, "Failed to fetch data for the specified time range: " + timeRange, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Failed to fetch data for the specified time range", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private List<HistoricalQuote> fetchHistoricalData(TimeRange timeRange) {
-        Calendar from = Calendar.getInstance();
-        Calendar to = Calendar.getInstance();
-        Interval interval = timeRange == TimeRange.YEAR ? Interval.WEEKLY : Interval.DAILY;
+    public class AssetDataFetcherRunnable implements Runnable {
+        @Override
+        public void run() {
+            TimeSeriesResponse timeSeriesResponse = fetchTimeSeriesResponseByTimeRange();
 
-        switch (timeRange) {
-            case DAY:
-                from.add(Calendar.DAY_OF_YEAR, -1);
-            case WEEK:
-                from.add(Calendar.WEEK_OF_YEAR, -1);
-            case MONTH:
-                from.add(Calendar.MONTH, -1);
-            case YEAR:
-                from.add(Calendar.YEAR, -1);
+            try {
+                assetDataHandler.postAtFrontOfQueue(() -> loadAssetDataFromTimeRange(timeSeriesResponse));
+            } catch (Exception ex) {
+                Log.i(AssetStatusActivity.class.getName(), "Unable to pull Stock data: ");
+            }
         }
 
-        try {
-            Stock currentStock = YahooFinance.get(tickerSymbol, from, to, interval);
-            return currentStock.getHistory();
-        } catch (Exception ex) {
-            Toast.makeText(this, "Unable to get stock details for " + tickerSymbol, Toast.LENGTH_LONG).show();
-            return new ArrayList<>();
+        private TimeSeriesResponse fetchTimeSeriesResponseByTimeRange() {
+            switch (currentTimeRange) {
+                case DAY:
+                default:
+                    return alphaVantageApi
+                            .timeSeries()
+                            .intraday()
+                            .forSymbol(tickerSymbol)
+                            .interval(Interval.THIRTY_MIN)
+                            .outputSize(OutputSize.FULL)
+                            .fetchSync();
+                case WEEK:
+                    return alphaVantageApi
+                            .timeSeries()
+                            .daily()
+                            .forSymbol(tickerSymbol)
+                            .fetchSync();
+                case MONTH:
+                    return alphaVantageApi
+                            .timeSeries()
+                            .weekly()
+                            .forSymbol(tickerSymbol)
+                            .fetchSync();
+                case YEAR:
+                    return alphaVantageApi
+                            .timeSeries()
+                            .monthly()
+                            .forSymbol(tickerSymbol)
+                            .fetchSync();
+            }
         }
     }
 
-    private enum TimeRange {
+    protected enum TimeRange {
         DAY,
         WEEK,
         MONTH,

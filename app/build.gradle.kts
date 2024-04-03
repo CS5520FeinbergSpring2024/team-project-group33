@@ -48,6 +48,6 @@ dependencies {
 
     // Add dependency for Line Chart and charting data for assets/coins
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
-    implementation("com.yahoofinance-api:YahooFinanceAPI:3.17.0")
+    implementation("com.github.crazzyghost:alphavantage-java:1.7.0")
 
 }

@@ -100,6 +100,39 @@
         app:layout_constraintStart_toEndOf="@+id/toRegBtn"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/amazonButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/amazonButton"
+        app:layout_constraintEnd_toStartOf="@+id/teslaButton"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/appleButton"
+        app:layout_constraintTop_toBottomOf="@+id/toRegBtn" />
+
+    <Button
+        android:id="@+id/appleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/appleButton"
+        app:layout_constraintEnd_toStartOf="@+id/amazonButton"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/toRegBtn" />
+
+    <Button
+        android:id="@+id/teslaButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="@string/teslaButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/amazonButton"
+        app:layout_constraintTop_toBottomOf="@+id/toRegBtn" />
+
     <!--    <Button-->
     <!--        android:id="@+id/addOneBtn"-->
     <!--        android:layout_width="wrap_content"-->

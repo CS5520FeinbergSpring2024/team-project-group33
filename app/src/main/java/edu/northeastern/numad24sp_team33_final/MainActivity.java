@@ -1,15 +1,14 @@
 package edu.northeastern.numad24sp_team33_final;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -21,6 +20,8 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
+import edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity;
 
 public class MainActivity extends AppCompatActivity {
     private TextView userEmailTextView, userIdTextView, userPointsTextView, bonusMessageTextView;
@@ -82,6 +83,29 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(() -> Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_SHORT).show());
                 }
             });
+        });
+
+        Button amazonButton = findViewById(R.id.amazonButton);
+        amazonButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, AssetStatusActivity.class);
+            intent.putExtra(AssetStatusActivity.TICKER_SYMBOL_KEY, "AMAZ");
+            startActivity(intent);
+        });
+
+        Button appleButton = findViewById(R.id.appleButton);
+        appleButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, AssetStatusActivity.class);
+            intent.putExtra(AssetStatusActivity.TICKER_SYMBOL_KEY, "AAPL");
+            startActivity(intent);
+        });
+
+        Button teslaButton = findViewById(R.id.teslaButton);
+        teslaButton.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, AssetStatusActivity.class);
+            Bundle bundle = new Bundle();
+            bundle.putString(AssetStatusActivity.TICKER_SYMBOL_KEY, "TSLA");
+            intent.putExtras(bundle);
+            startActivity(intent);
         });
 
     }
