@@ -9,4 +9,7 @@
     <string name="teslaButton">Tesla</string>
     <string name="appleButton">Apple</string>
     <string name="amazonButton">Amazon</string>
+    <string name="guessHighButton">Guess High!</string>
+    <string name="guessLowButton">Guess Low!</string>
+    <string name="pointGuessValue">100</string>
 </resources>

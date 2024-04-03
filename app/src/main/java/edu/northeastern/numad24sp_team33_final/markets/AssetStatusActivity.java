@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +43,8 @@ public class AssetStatusActivity extends AppCompatActivity {
     private AlphaVantage alphaVantageApi = AlphaVantage.api();
     private Thread assetDataFetcherThread;
     private Handler assetDataHandler = new Handler();
+    private TextView pointTextView;
+    private int currentPointGuess = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +52,10 @@ public class AssetStatusActivity extends AppCompatActivity {
         setContentView(R.layout.activity_asset_status);
         alphaVantageApi.init(apiConfig);
         lineChart = findViewById(R.id.lineChart);
+
         TextView assetTitleTextView = findViewById(R.id.assetTitle);
+        pointTextView = findViewById(R.id.currentPointGuessView);
+        pointTextView.setText(String.valueOf(currentPointGuess));
 
         Button buttonDayView = findViewById(R.id.buttonDayView);
         buttonDayView.setOnClickListener(view -> setupGraphForTimeRange(DAY));
@@ -66,12 +72,33 @@ public class AssetStatusActivity extends AppCompatActivity {
         Button refreshButton = findViewById(R.id.refreshButton);
         refreshButton.setOnClickListener(view -> setupGraph());
 
+        ImageButton increaseGuessButton = findViewById(R.id.increaseGuessButton);
+        increaseGuessButton.setOnClickListener(view -> changeGuessValue(10));
+
+        ImageButton decreaseGuessButton = findViewById(R.id.decreaseGuessButton);
+        decreaseGuessButton.setOnClickListener(view -> changeGuessValue(-10));
+
+        Button guessHighButton = findViewById(R.id.guessHighButton);
+        guessHighButton.setOnClickListener( view -> {
+            // Guess logic to be added
+        });
+
+        Button guessLowButton = findViewById(R.id.guessLowButton);
+        guessLowButton.setOnClickListener( view -> {
+            // Guess logic to be added
+        });
+
         // Load ticket symbol from state
         tickerSymbol = getIntent().getExtras().getString(TICKER_SYMBOL_KEY, "AAPL");
         assetTitleTextView.setText(tickerSymbol);
 
         // Default to Day View time range
         setupGraphForTimeRange(DAY);
+    }
+
+    private void changeGuessValue(int pointChange) {
+        currentPointGuess += pointChange;
+        pointTextView.setText(String.valueOf(currentPointGuess));
     }
 
     private void setupGraphForTimeRange(TimeRange timeRange) {
