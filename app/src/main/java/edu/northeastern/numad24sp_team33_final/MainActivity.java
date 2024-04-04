@@ -88,14 +88,18 @@ public class MainActivity extends AppCompatActivity {
         Button amazonButton = findViewById(R.id.amazonButton);
         amazonButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, AssetStatusActivity.class);
-            intent.putExtra(AssetStatusActivity.TICKER_SYMBOL_KEY, "AMAZ");
+            Bundle bundle = new Bundle();
+            bundle.putString(AssetStatusActivity.TICKER_SYMBOL_KEY, "AMAZ");
+            intent.putExtras(bundle);
             startActivity(intent);
         });
 
         Button appleButton = findViewById(R.id.appleButton);
         appleButton.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, AssetStatusActivity.class);
-            intent.putExtra(AssetStatusActivity.TICKER_SYMBOL_KEY, "AAPL");
+            Bundle bundle = new Bundle();
+            bundle.putString(AssetStatusActivity.TICKER_SYMBOL_KEY, "AAPL");
+            intent.putExtras(bundle);
             startActivity(intent);
         });
 
