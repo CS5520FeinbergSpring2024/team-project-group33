@@ -86,7 +86,7 @@
         android:text="@string/pointGuessValue"
         app:layout_constraintBottom_toTopOf="@+id/guessLowButton"
         app:layout_constraintEnd_toStartOf="@+id/increaseGuessButton"
-        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_bias="0.51"
         app:layout_constraintStart_toEndOf="@+id/decreaseGuessButton" />
 
     <ImageButton

@@ -74,7 +74,6 @@ public class AssetStatusActivity extends AppCompatActivity {
 
         ImageButton increaseGuessButton = findViewById(R.id.increaseGuessButton);
         increaseGuessButton.setOnClickListener(view -> changeGuessValue(10));
-
         ImageButton decreaseGuessButton = findViewById(R.id.decreaseGuessButton);
         decreaseGuessButton.setOnClickListener(view -> changeGuessValue(-10));
 
