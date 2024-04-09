@@ -12,8 +12,12 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.EditText;
+import android.text.Editable;
+import android.text.TextWatcher;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
 
 import com.crazzyghost.alphavantage.AlphaVantage;
 import com.crazzyghost.alphavantage.Config;
@@ -26,10 +30,19 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.northeastern.numad24sp_team33_final.BettingManager;
 import edu.northeastern.numad24sp_team33_final.R;
+import edu.northeastern.numad24sp_team33_final.Bet;
 
 public class AssetStatusActivity extends AppCompatActivity {
     public static final String TICKER_SYMBOL_KEY = "tickerSymbolKey";
@@ -43,8 +56,13 @@ public class AssetStatusActivity extends AppCompatActivity {
     private AlphaVantage alphaVantageApi = AlphaVantage.api();
     private Thread assetDataFetcherThread;
     private Handler assetDataHandler = new Handler();
-    private TextView pointTextView;
-    private int currentPointGuess = 100;
+    private TextView pointTextView, maxBetPointsView;
+    private EditText currentPointGuessView;
+    private final DatabaseReference mDatabase = FirebaseDatabase.getInstance().getReference();
+    private int userPoints = 0;
+    private TextView tvGuessLowStatus, tvGuessHighStatus;
+    private BettingManager bettingManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +70,63 @@ public class AssetStatusActivity extends AppCompatActivity {
         setContentView(R.layout.activity_asset_status);
         alphaVantageApi.init(apiConfig);
         lineChart = findViewById(R.id.lineChart);
+        fetchUserPoints();
+        currentPointGuessView = findViewById(R.id.currentPointGuessView);
+        maxBetPointsView = findViewById(R.id.maxBetPointsView);
+        bettingManager = new BettingManager();
+        tickerSymbol = getIntent().getExtras().getString(TICKER_SYMBOL_KEY, "AAPL");
 
-        TextView assetTitleTextView = findViewById(R.id.assetTitle);
-        pointTextView = findViewById(R.id.currentPointGuessView);
-        pointTextView.setText(String.valueOf(currentPointGuess));
+        tvGuessLowStatus = findViewById(R.id.tvGuessLowStatus);
+        tvGuessHighStatus = findViewById(R.id.tvGuessHighStatus);
+        fetchAndUpdateBettingStatus(tickerSymbol);
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        //Debug lines
+//        int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
+//        Log.d("BettingSystem", "Placing bet. User ID: " + userId + ", Bet Amount: " + betAmount);
+//        bettingManager.placeBet(tickerSymbol, true, userId, betAmount);
+        //Debug lines
+
+        Button guessHighButton = findViewById(R.id.guessHighButton);
+        guessHighButton.setOnClickListener(view -> {
+            Log.d("BettingSystem", "High bet button clicked");
+            int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
+            bettingManager.placeBet(tickerSymbol, true, userId, betAmount, this::updateAfterBet);
+        });
+
+        Button guessLowButton = findViewById(R.id.guessLowButton);
+        guessLowButton.setOnClickListener(view -> {
+            Log.d("BettingSystem", "Low bet button clicked");
+            int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
+            bettingManager.placeBet(tickerSymbol, false, userId, betAmount, this::updateAfterBet);
+        });
+
+        currentPointGuessView.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (!s.toString().isEmpty()) {
+                    int value = Integer.parseInt(s.toString());
+                    if (value > userPoints) {
+                        currentPointGuessView.setText(String.valueOf(userPoints)); // Set to max if over userPoints
+                    } else if (value < 0) {
+                        currentPointGuessView.setText("0"); // Set to 0 if negative
+                    }
+                }
+            }
+        });
+
+        ImageButton increaseGuessButton = findViewById(R.id.increaseGuessButton);
+        increaseGuessButton.setOnClickListener(view -> adjustBetAmount(true));
+
+        ImageButton decreaseGuessButton = findViewById(R.id.decreaseGuessButton);
+        decreaseGuessButton.setOnClickListener(view -> adjustBetAmount(false));
 
         Button buttonDayView = findViewById(R.id.buttonDayView);
         buttonDayView.setOnClickListener(view -> setupGraphForTimeRange(DAY));
@@ -72,33 +143,22 @@ public class AssetStatusActivity extends AppCompatActivity {
         Button refreshButton = findViewById(R.id.refreshButton);
         refreshButton.setOnClickListener(view -> setupGraph());
 
-        ImageButton increaseGuessButton = findViewById(R.id.increaseGuessButton);
-        increaseGuessButton.setOnClickListener(view -> changeGuessValue(10));
-        ImageButton decreaseGuessButton = findViewById(R.id.decreaseGuessButton);
-        decreaseGuessButton.setOnClickListener(view -> changeGuessValue(-10));
+//        Button guessHighButton = findViewById(R.id.guessHighButton);
+//        guessHighButton.setOnClickListener(view -> {});
 
-        Button guessHighButton = findViewById(R.id.guessHighButton);
-        guessHighButton.setOnClickListener( view -> {
-            // Guess logic to be added
-        });
+//        Button guessLowButton = findViewById(R.id.guessLowButton);
+//        guessLowButton.setOnClickListener(view -> {});
 
-        Button guessLowButton = findViewById(R.id.guessLowButton);
-        guessLowButton.setOnClickListener( view -> {
-            // Guess logic to be added
-        });
-
-        // Load ticket symbol from state
-        tickerSymbol = getIntent().getExtras().getString(TICKER_SYMBOL_KEY, "AAPL");
+        TextView assetTitleTextView = findViewById(R.id.assetTitle);
         assetTitleTextView.setText(tickerSymbol);
 
-        // Default to Day View time range
         setupGraphForTimeRange(DAY);
     }
 
-    private void changeGuessValue(int pointChange) {
-        currentPointGuess += pointChange;
-        pointTextView.setText(String.valueOf(currentPointGuess));
-    }
+//    private void changeGuessValue(int pointChange) {
+//        currentPointGuess += pointChange;
+//        pointTextView.setText(String.valueOf(currentPointGuess));
+//    }
 
     private void setupGraphForTimeRange(TimeRange timeRange) {
         // Update Graph with time range
@@ -181,5 +241,106 @@ public class AssetStatusActivity extends AppCompatActivity {
         WEEK,
         MONTH,
         YEAR
+    }
+
+    private void fetchUserPoints() {
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId);
+        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                Log.d("Firebase", "Data fetched successfully");
+                if (dataSnapshot.exists() && dataSnapshot.child("points").getValue(Integer.class) != null) {
+                    userPoints = dataSnapshot.child("points").getValue(Integer.class);
+                    updateUIWithUserPoints();
+                    adjustCurrentPointGuessView();
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.d("Firebase", "Error fetching user points: " + databaseError.getMessage());
+            }
+        });
+    }
+
+    private void updateUIWithUserPoints() {
+        if (maxBetPointsView != null) {
+            maxBetPointsView.setText(String.format("Max points: %d", userPoints));
+        }
+    }
+
+    private void adjustCurrentPointGuessView() {
+        runOnUiThread(() -> {
+            if (!currentPointGuessView.getText().toString().isEmpty()) {
+                int currentBet = Integer.parseInt(currentPointGuessView.getText().toString());
+                if (currentBet > userPoints) {
+                    currentPointGuessView.setText(String.valueOf(userPoints));
+                }
+            }
+        });
+    }
+
+    private void adjustBetAmount(boolean increase) {
+        int currentBet = 0;
+        if (!currentPointGuessView.getText().toString().isEmpty()) {
+            currentBet = Integer.parseInt(currentPointGuessView.getText().toString());
+        }
+        if (increase) {
+            currentBet += 10;
+        } else {
+            currentBet -= 10;
+        }
+
+        currentBet = Math.max(0, currentBet);
+        currentBet = Math.min(currentBet, userPoints);
+        currentPointGuessView.setText(String.valueOf(currentBet));
+    }
+
+    private void fetchAndUpdateBettingStatus(String assetId) {
+        String path = "bets";
+        Log.d("FirebasePath", "Querying path: " + path);
+
+        DatabaseReference betsRef = FirebaseDatabase.getInstance().getReference(path);
+        betsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                int totalLow = 0;
+                int totalHigh = 0;
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Bet bet = snapshot.getValue(Bet.class);
+                    if (bet != null && bet.getAssetId().equals(assetId)) {
+                        if (bet.isHigh()) {
+                            totalHigh += bet.getAmount();
+                        } else {
+                            totalLow += bet.getAmount();
+                        }
+                    }
+                }
+                // Update the UI
+                tvGuessLowStatus.setText(String.format("Low: %d", totalLow));
+                tvGuessHighStatus.setText(String.format("High: %d", totalHigh));
+
+                //TODO: Calculate Reward
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.w("Firebase", "Failed to read value.", databaseError.toException());
+            }
+        });
+    }
+
+    private void updateAfterBet() {
+        fetchUserPoints();
+        runOnUiThread(() -> {
+
+            if (!currentPointGuessView.getText().toString().isEmpty()) {
+                int currentBet = Integer.parseInt(currentPointGuessView.getText().toString());
+                if (currentBet > userPoints) { // If the current bet is more than available points after betting
+                    currentPointGuessView.setText(String.valueOf(userPoints)); // Adjust the bet amount to the new max
+                }
+            }
+        });
     }
 }
