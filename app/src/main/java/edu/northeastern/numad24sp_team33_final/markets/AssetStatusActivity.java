@@ -39,6 +39,9 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
+import java.time.LocalTime;
 
 import edu.northeastern.numad24sp_team33_final.BettingManager;
 import edu.northeastern.numad24sp_team33_final.R;
@@ -341,6 +344,33 @@ public class AssetStatusActivity extends AppCompatActivity {
                     currentPointGuessView.setText(String.valueOf(userPoints)); // Adjust the bet amount to the new max
                 }
             }
+            checkAndDisableBettingIfNeeded();
         });
+    }
+
+    private boolean isPastResetTime() {
+        ZonedDateTime nyNow = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        LocalTime resetTime = LocalTime.of(16, 0); // When market close, 4pm ET
+        return nyNow.toLocalTime().isAfter(resetTime);
+    }
+
+    private void checkAndDisableBettingIfNeeded() {
+        boolean pastResetTime = isPastResetTime();
+
+        Button guessHighButton = findViewById(R.id.guessHighButton);
+        Button guessLowButton = findViewById(R.id.guessLowButton);
+
+        guessHighButton.setEnabled(!pastResetTime);
+        guessLowButton.setEnabled(!pastResetTime);
+
+        if (pastResetTime) {
+            Toast.makeText(this, "Betting is closed for today. Come back tomorrow!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        checkAndDisableBettingIfNeeded();
     }
 }

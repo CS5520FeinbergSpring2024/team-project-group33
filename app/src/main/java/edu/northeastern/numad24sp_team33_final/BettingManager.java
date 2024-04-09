@@ -12,7 +12,8 @@ public class BettingManager {
     }
 
     public void placeBet(String assetId, boolean isHigh, String userId, int amount, Runnable onSuccessUpdateUI) {
-        Bet bet = new Bet(userId, assetId, amount, isHigh);
+        String currentDate = Bet.getCurrentDate();
+        Bet bet = new Bet(userId, assetId, amount, isHigh, currentDate);
         String betId = databaseReference.child("bets").push().getKey();
         databaseReference.child("bets").child(betId).setValue(bet).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
