@@ -1,19 +1,25 @@
 package edu.northeastern.numad24sp_team33_final;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 public class Bet {
     private String userId;
     private String assetId;
     private int amount;
     private boolean isHigh;
+    private String date;
 
     public Bet() {
     }
 
-    public Bet(String userId, String assetId, int amount, boolean isHigh) {
+    public Bet(String userId, String assetId, int amount, boolean isHigh, String date) {
         this.userId = userId;
         this.assetId = assetId;
         this.amount = amount;
         this.isHigh = isHigh;
+        this.date = date;
     }
 
     public String getUserId() {
@@ -46,5 +52,19 @@ public class Bet {
 
     public void setHigh(boolean high) {
         isHigh = high;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    // Helper method to get the current date in "YYYY-MM-DD" format
+    public static String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        return sdf.format(new Date());
     }
 }
