@@ -42,6 +42,7 @@ import java.util.List;
 import java.time.ZonedDateTime;
 import java.time.ZoneId;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 import edu.northeastern.numad24sp_team33_final.BettingManager;
 import edu.northeastern.numad24sp_team33_final.R;
@@ -65,7 +66,7 @@ public class AssetStatusActivity extends AppCompatActivity {
     private int userPoints = 0;
     private TextView tvGuessLowStatus, tvGuessHighStatus;
     private BettingManager bettingManager;
-
+    private TextView tvRewardRatioLow, tvRewardRatioHigh;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,27 +82,33 @@ public class AssetStatusActivity extends AppCompatActivity {
 
         tvGuessLowStatus = findViewById(R.id.tvGuessLowStatus);
         tvGuessHighStatus = findViewById(R.id.tvGuessHighStatus);
-        fetchAndUpdateBettingStatus(tickerSymbol);
+        tvRewardRatioLow = findViewById(R.id.tvRewardRatioLow);
+        tvRewardRatioHigh = findViewById(R.id.tvRewardRatioHigh);
+
+        ZonedDateTime nowInET = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        String formattedDate = nowInET.format(formatter);
+        fetchAndUpdateBettingStatus(tickerSymbol, formattedDate);
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-        //Debug lines
+        //Dan Debug lines
 //        int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
 //        Log.d("BettingSystem", "Placing bet. User ID: " + userId + ", Bet Amount: " + betAmount);
 //        bettingManager.placeBet(tickerSymbol, true, userId, betAmount);
-        //Debug lines
+        //Dan Debug lines
 
         Button guessHighButton = findViewById(R.id.guessHighButton);
         guessHighButton.setOnClickListener(view -> {
             Log.d("BettingSystem", "High bet button clicked");
             int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
-            bettingManager.placeBet(tickerSymbol, true, userId, betAmount, this::updateAfterBet);
+            bettingManager.placeBet(tickerSymbol, true, userId, betAmount, formattedDate, this::updateAfterBet);
         });
 
         Button guessLowButton = findViewById(R.id.guessLowButton);
         guessLowButton.setOnClickListener(view -> {
             Log.d("BettingSystem", "Low bet button clicked");
             int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
-            bettingManager.placeBet(tickerSymbol, false, userId, betAmount, this::updateAfterBet);
+            bettingManager.placeBet(tickerSymbol, false, userId, betAmount, formattedDate, this::updateAfterBet);
         });
 
         currentPointGuessView.addTextChangedListener(new TextWatcher() {
@@ -146,22 +153,11 @@ public class AssetStatusActivity extends AppCompatActivity {
         Button refreshButton = findViewById(R.id.refreshButton);
         refreshButton.setOnClickListener(view -> setupGraph());
 
-//        Button guessHighButton = findViewById(R.id.guessHighButton);
-//        guessHighButton.setOnClickListener(view -> {});
-
-//        Button guessLowButton = findViewById(R.id.guessLowButton);
-//        guessLowButton.setOnClickListener(view -> {});
-
         TextView assetTitleTextView = findViewById(R.id.assetTitle);
         assetTitleTextView.setText(tickerSymbol);
 
         setupGraphForTimeRange(DAY);
     }
-
-//    private void changeGuessValue(int pointChange) {
-//        currentPointGuess += pointChange;
-//        pointTextView.setText(String.valueOf(currentPointGuess));
-//    }
 
     private void setupGraphForTimeRange(TimeRange timeRange) {
         // Update Graph with time range
@@ -300,31 +296,32 @@ public class AssetStatusActivity extends AppCompatActivity {
         currentPointGuessView.setText(String.valueOf(currentBet));
     }
 
-    private void fetchAndUpdateBettingStatus(String assetId) {
-        String path = "bets";
-        Log.d("FirebasePath", "Querying path: " + path);
-
-        DatabaseReference betsRef = FirebaseDatabase.getInstance().getReference(path);
+    private void fetchAndUpdateBettingStatus(String assetId, String date) {
+        DatabaseReference betsRef = FirebaseDatabase.getInstance().getReference("bets").child(assetId).child(date.replace("/", "-"));
         betsRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                int totalLow = 0;
-                int totalHigh = 0;
+                long totalLow = 0, totalHigh = 0;
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     Bet bet = snapshot.getValue(Bet.class);
-                    if (bet != null && bet.getAssetId().equals(assetId)) {
-                        if (bet.isHigh()) {
-                            totalHigh += bet.getAmount();
-                        } else {
-                            totalLow += bet.getAmount();
-                        }
+                    if (bet != null) {
+                        if (bet.isHigh()) totalHigh += bet.getAmount();
+                        else totalLow += bet.getAmount();
                     }
                 }
-                // Update the UI
-                tvGuessLowStatus.setText(String.format("Low: %d", totalLow));
-                tvGuessHighStatus.setText(String.format("High: %d", totalHigh));
 
-                //TODO: Calculate Reward
+                final long finalTotalLow = totalLow;
+                final long finalTotalHigh = totalHigh;
+                final double rewardRatioLow = totalHigh > 0 ? (double) (totalLow + totalHigh) / totalLow : 0;
+                final double rewardRatioHigh = totalLow > 0 ? (double) (totalLow + totalHigh) / totalHigh : 0;
+
+                // Updating the UI
+                runOnUiThread(() -> {
+                    tvGuessLowStatus.setText(String.format("Low: %d", finalTotalLow));
+                    tvGuessHighStatus.setText(String.format("High: %d", finalTotalHigh));
+                    tvRewardRatioLow.setText(String.format("Reward Ratio: %.2f", rewardRatioLow));
+                    tvRewardRatioHigh.setText(String.format("Reward Ratio: %.2f", rewardRatioHigh));
+                });
             }
 
             @Override
@@ -340,8 +337,8 @@ public class AssetStatusActivity extends AppCompatActivity {
 
             if (!currentPointGuessView.getText().toString().isEmpty()) {
                 int currentBet = Integer.parseInt(currentPointGuessView.getText().toString());
-                if (currentBet > userPoints) { // If the current bet is more than available points after betting
-                    currentPointGuessView.setText(String.valueOf(userPoints)); // Adjust the bet amount to the new max
+                if (currentBet > userPoints) {
+                    currentPointGuessView.setText(String.valueOf(userPoints));
                 }
             }
             checkAndDisableBettingIfNeeded();
