@@ -144,6 +144,36 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/amazonButton" />
 
+
+    <TextView
+        android:id="@+id/recentTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Recent"
+        android:textSize="24sp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintTop_toBottomOf="@id/leaderboardButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/dynamicButtonContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/recentTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+        <!-- Dynamic buttons will be added here programmatically -->
+    </LinearLayout>
+
+
+
+
+
+
     <!--    <Button-->
     <!--        android:id="@+id/addOneBtn"-->
     <!--        android:layout_width="wrap_content"-->
