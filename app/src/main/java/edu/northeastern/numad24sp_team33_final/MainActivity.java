@@ -25,7 +25,7 @@ import edu.northeastern.numad24sp_team33_final.markets.AssetStatusActivity;
 
 public class MainActivity extends AppCompatActivity {
     private TextView userEmailTextView, userIdTextView, userPointsTextView, bonusMessageTextView;
-    private Button logoutButton, reg, login, testPlusOneBtn, testMinusOneBtn, claimBonusButton;
+    private Button logoutButton, reg, login, testPlusOneBtn, testMinusOneBtn, claimBonusButton, leaderboardButton;
     private FirebaseAuth mAuth;
     private DatabaseReference mDatabase;
 
@@ -83,6 +83,12 @@ public class MainActivity extends AppCompatActivity {
                     runOnUiThread(() -> Toast.makeText(MainActivity.this, exception.getMessage(), Toast.LENGTH_SHORT).show());
                 }
             });
+        });
+
+        leaderboardButton = findViewById(R.id.leaderboardButton);
+        leaderboardButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, LeaderboardActivity.class);
+            startActivity(intent);
         });
 
         Button amazonButton = findViewById(R.id.amazonButton);
