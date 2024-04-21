@@ -25,15 +25,16 @@ public class BettingManager {
                 });
     }
 
-
-    private void updateUserPoints(String userId, int pointsChange, Runnable onSuccessUpdateUI) {
-        DatabaseReference userRef = databaseReference.child("users").child(userId).child("points");
+    private void updateUserPoints(String userId, int pointsToAdd, Runnable onSuccess) {
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("points");
         userRef.get().addOnSuccessListener(snapshot -> {
             Integer currentPoints = snapshot.getValue(Integer.class);
             if (currentPoints != null) {
-                userRef.setValue(currentPoints + pointsChange).addOnCompleteListener(task -> {
+                userRef.setValue(currentPoints + pointsToAdd).addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        onSuccessUpdateUI.run();
+                        onSuccess.run();
+                    } else {
+                        Log.e("Firebase", "Failed to update user points.");
                     }
                 });
             }

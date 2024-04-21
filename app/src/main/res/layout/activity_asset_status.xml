@@ -190,4 +190,14 @@
         android:layout_marginTop="4dp"
     />
 
+    <Button
+        android:id="@+id/btnClaimWinning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Claim Winning"
+        app:layout_constraintTop_toBottomOf="@id/tvRewardRatioHigh"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

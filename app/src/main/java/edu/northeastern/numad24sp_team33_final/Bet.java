@@ -10,6 +10,7 @@ public class Bet {
     private int amount;
     private boolean isHigh;
     private String date;
+    private boolean claimed;
 
     public Bet() {
     }
@@ -20,6 +21,7 @@ public class Bet {
         this.amount = amount;
         this.isHigh = isHigh;
         this.date = date;
+        this.claimed = false;
     }
 
     public String getUserId() {
@@ -66,5 +68,13 @@ public class Bet {
     public static String getCurrentDate() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
         return sdf.format(new Date());
+    }
+
+    public boolean isClaimed() {
+        return claimed;
+    }
+
+    public void setClaimed(boolean claimed) {
+        this.claimed = claimed;
     }
 }

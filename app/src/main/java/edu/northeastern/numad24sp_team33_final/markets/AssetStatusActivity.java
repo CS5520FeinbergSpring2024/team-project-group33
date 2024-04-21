@@ -67,6 +67,7 @@ public class AssetStatusActivity extends AppCompatActivity {
     private TextView tvGuessLowStatus, tvGuessHighStatus;
     private BettingManager bettingManager;
     private TextView tvRewardRatioLow, tvRewardRatioHigh;
+    private Button btnClaimWinning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +111,14 @@ public class AssetStatusActivity extends AppCompatActivity {
             int betAmount = Integer.parseInt(currentPointGuessView.getText().toString());
             bettingManager.placeBet(tickerSymbol, false, userId, betAmount, formattedDate, this::updateAfterBet);
         });
+
+        btnClaimWinning = findViewById(R.id.btnClaimWinning);
+        btnClaimWinning.setOnClickListener(view -> {
+            claimWinnings();
+            view.setEnabled(false);
+        });
+        checkAndEnableClaimWinning();
+        checkAndDisableBettingIfNeeded();
 
         currentPointGuessView.addTextChangedListener(new TextWatcher() {
             @Override
@@ -352,22 +361,102 @@ public class AssetStatusActivity extends AppCompatActivity {
     }
 
     private void checkAndDisableBettingIfNeeded() {
-        boolean pastResetTime = isPastResetTime();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        LocalTime nowTime = now.toLocalTime();
+        LocalTime bettingStart = LocalTime.of(9, 0); // 9:00 AM
+        LocalTime bettingEnd = LocalTime.of(16, 0); // 4:00 PM
+
+        boolean isBettingTime = nowTime.isAfter(bettingStart) && nowTime.isBefore(bettingEnd);
 
         Button guessHighButton = findViewById(R.id.guessHighButton);
         Button guessLowButton = findViewById(R.id.guessLowButton);
+        guessHighButton.setEnabled(isBettingTime);
+        guessLowButton.setEnabled(isBettingTime);
+    }
 
-        guessHighButton.setEnabled(!pastResetTime);
-        guessLowButton.setEnabled(!pastResetTime);
+    private void checkAndEnableClaimWinning() {
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        LocalTime nowTime = now.toLocalTime();
+        LocalTime claimStart = LocalTime.of(17, 0); // 5:00 PM
+        LocalTime claimEnd = LocalTime.of(16, 0); // 4:00 PM the next day
 
-        if (pastResetTime) {
-            Toast.makeText(this, "Betting is closed for today. Come back tomorrow!", Toast.LENGTH_LONG).show();
-        }
+        boolean isClaimTime = nowTime.isAfter(claimStart) || nowTime.isBefore(claimEnd);
+
+        btnClaimWinning.setEnabled(isClaimTime);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         checkAndDisableBettingIfNeeded();
+    }
+
+    private void claimWinnings() {
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.of("America/New_York"));
+        String todayDate = now.format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
+        String yesterdayDate = now.minusDays(1).format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
+
+        DatabaseReference closingRef = FirebaseDatabase.getInstance().getReference("closing").child(tickerSymbol).child(yesterdayDate);
+        DatabaseReference betsRef = FirebaseDatabase.getInstance().getReference("bets").child(tickerSymbol).child(yesterdayDate);
+
+        closingRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    Double downRatio = dataSnapshot.child("downRatio").getValue(Double.class);
+                    Double upRatio = dataSnapshot.child("upRatio").getValue(Double.class);
+                    Boolean up = dataSnapshot.child("up").getValue(Boolean.class);
+
+                    betsRef.orderByChild("userId").equalTo(userId).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            for (DataSnapshot betSnapshot : snapshot.getChildren()) {
+                                Bet bet = betSnapshot.getValue(Bet.class);
+                                if (bet != null && !bet.isClaimed() && bet.getUserId().equals(userId)) {
+                                    boolean betWon = (bet.isHigh() && up != null && up) || (!bet.isHigh() && up != null && !up);
+                                    if (betWon) {
+                                        double ratio = bet.isHigh() ? (upRatio != null ? upRatio : 0) : (downRatio != null ? downRatio : 0);
+                                        int winnings = (int) (bet.getAmount() * ratio);
+                                        updateUserPoints(userId, winnings, () -> {
+                                            Log.d("Winning", "Points updated successfully with: " + winnings);
+                                            betSnapshot.getRef().child("claimed").setValue(true);
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            Log.e("Firebase", "Failed to read bets: " + error.getMessage());
+                        }
+                    });
+                } else {
+                    Log.e("Firebase", "No closing data available for yesterday.");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Firebase", "Failed to read closing info: " + error.getMessage());
+            }
+        });
+    }
+
+    private void updateUserPoints(String userId, int pointsToAdd, Runnable onSuccess) {
+        DatabaseReference userRef = FirebaseDatabase.getInstance().getReference("users").child(userId).child("points");
+        userRef.get().addOnSuccessListener(snapshot -> {
+            Integer currentPoints = snapshot.getValue(Integer.class);
+            if (currentPoints != null) {
+                userRef.setValue(currentPoints + pointsToAdd).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        onSuccess.run();
+                    } else {
+                        Log.e("Firebase", "Failed to update user points.");
+                    }
+                });
+            }
+        });
     }
 }
