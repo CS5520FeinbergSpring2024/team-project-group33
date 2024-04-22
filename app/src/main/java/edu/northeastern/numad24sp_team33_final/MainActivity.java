@@ -52,7 +52,13 @@ public class MainActivity extends AppCompatActivity {
         userIdTextView = findViewById(R.id.userIdTextView);
         userPointsTextView = findViewById(R.id.userPointsTextView);
 
-        userUID = mAuth.getCurrentUser().getUid();
+        //null pointer exception
+        try {
+            userUID = mAuth.getCurrentUser().getUid();
+        }
+        catch (NullPointerException e) {
+            userUID = "";
+        }
 
         logoutButton = findViewById(R.id.logoutButton);
         logoutButton.setOnClickListener(v -> logoutUser());
